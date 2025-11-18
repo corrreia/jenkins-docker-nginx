@@ -1,17 +1,34 @@
 pipeline {
 agent any
+environment {
+IMAGE_NAME = "corrreia/jenkins-docker-nginx"
+IMAGE_TAG = "latest"
+CONTAINER_NAME = "correia-nginx-app"
+}
 stages {
 stage('Build Docker Image') {
 steps {
 script {
-docker.build('jenkins-docker-nginx:latest')
+// Constrói a imagem e guarda numa variável Groovy
+customImage = docker.build("${IMAGE_NAME}:${IMAGE_TAG}")
 }
 }
 }
-stage('Run Container') {
+stage('Run Container Locally') {
 steps {
-sh 'docker run --rm -d --name correia-nginx-app -p 8081:80 jenkins-docker-nginx:latest'
-echo "Aceda a http://localhost:8081 para ver a página"
+script {
+sh "docker run --rm -d --name ${CONTAINER_NAME} -p 8081:80 ${IMAGE_NAME}:${IMAGE_TAG}"
+echo "Aceda a http://localhost:8081"
+}
+}
+}
+stage('Push Docker Image to Docker Hub') {
+steps {
+script {
+docker.withRegistry('https://index.docker.io/v1/', 'my-docker-token') {
+customImage.push()
+}
+}
 }
 }
 }
